@@ -35,24 +35,24 @@ class _LLMChatScreenState extends State<LLMChatScreen> {
 
   // List of alternative models to try
   final List<Map<String, dynamic>> _models = [
-    // {
-    //   'name': 'TinyLlama 1.1B (Small)',
-    //   'url':
-    //       'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
-    //   'context': 2048,
-    // },
+    {
+      'name': 'TinyLlama 1.1B (Small)',
+      'url':
+          'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
+      'context': 2048,
+    },
     // {
     //   'name': 'Phi-2 2.7B (Medium)',
     //   'url':
     //       'https://huggingface.co/microsoft/phi-2-gguf/resolve/main/phi-2.Q4_K_M.gguf',
     //   'context': 2048,
     // },
-    {
-      'name': 'Gemma 2B (Original)',
-      'url':
-          'https://huggingface.co/codegood/gemma-2b-it-Q4_K_M-GGUF/resolve/main/gemma-2b-it.Q4_K_M.gguf',
-      'context': 2048,
-    },
+    // {
+    //   'name': 'Gemma 2B (Original)',
+    //   'url':
+    //       'https://huggingface.co/codegood/gemma-2b-it-Q4_K_M-GGUF/resolve/main/gemma-2b-it.Q4_K_M.gguf',
+    //   'context': 2048,
+    // },
   ];
 
   int _currentModelIndex = 0;

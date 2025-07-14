@@ -1,3 +1,4 @@
+import 'package:cactus_llm_poc/offline_llm_integeration.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cactus/cactus.dart';
@@ -28,6 +29,8 @@ class LLMChatScreen extends StatefulWidget {
 class _LLMChatScreenState extends State<LLMChatScreen> {
   CactusLM? _lm;
   final TextEditingController _controller = TextEditingController();
+
+  ModelService modelService = ModelService();
   String _response = '';
   bool _isLoading = true;
   String _loadingStatus = 'Initializing...';
@@ -64,84 +67,118 @@ class _LLMChatScreenState extends State<LLMChatScreen> {
   }
 
   Future<void> _loadModel() async {
-    if (_currentModelIndex >= _models.length) {
-      setState(() {
-        _errorMessage =
-            'All models failed to load. Please check your device compatibility.';
-        _isLoading = false;
-      });
-      return;
-    }
+    final dir = await getApplicationDocumentsDirectory();
+    final modelFile = File('${dir.path}/tinyllama.gguf');
 
-    final model = _models[_currentModelIndex];
-
-    try {
-      setState(() {
-        _loadingStatus = 'Testing network connection...';
-        _errorMessage = null;
-      });
-
-      // Test network connectivity first
-      await _testNetworkConnectivity();
-
-      setState(() {
-        _loadingStatus = 'Loading ${model['name']}...';
-      });
-
-      print('Attempting to load model: ${model['name']}');
-      print('Model URL: ${model['url']}');
-      print('Platform: ${Platform.operatingSystem}');
-      print('Architecture: ${Platform.version}');
-      _lm = await CactusLM.init(
-        modelUrl: model['url'],
-        contextSize: model['context'],
-
-        onProgress: (progress, status, isError) {
-          setState(() {
-            _loadingStatus =
-                '${model['name']}: $status (${((progress ?? 0) * 100).toStringAsFixed(1)}%)';
-          });
-          print('Progress: $status (${(progress ?? 0) * 100}%)');
-
-          if (isError) {
-            print('Error during loading: $status');
-          }
-        },
+    // Copy model from assets to local storage (once)
+    if (!await modelFile.exists()) {
+      final byteData = await rootBundle.load(
+        'assets/model/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
       );
-
-      setState(() {
-        _isLoading = false;
-        _loadingStatus = '${model['name']} loaded successfully!';
-      });
-
-      print('Model loaded successfully: ${model['name']}');
-    } catch (e) {
-      print('Model loading error for ${model['name']}: $e');
-      print('Error type: ${e.runtimeType}');
-
-      // Check if it's a network error
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup')) {
-        setState(() {
-          _errorMessage =
-              'Network Error: Cannot connect to Hugging Face.\n\nPlease check:\n• Internet connection\n• VPN settings\n• Firewall restrictions\n\nError: $e';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Try next model
-      _currentModelIndex++;
-      if (_currentModelIndex < _models.length) {
-        print('Trying next model...');
-        await _loadModel();
-      } else {
-        setState(() {
-          _errorMessage = 'All models failed to load. Last error: $e';
-          _isLoading = false;
-        });
-      }
+      await modelFile.writeAsBytes(byteData.buffer.asUint8List());
     }
+
+    // Initialize the model from local path
+    _lm = await CactusLM.init(modelUrl: modelFile.path, contextSize: 512);
+
+    setState(() {
+      // _errorMessage = 'All models failed to load. Last error: $e';
+      _isLoading = false;
+    });
+    // if (_currentModelIndex >= _models.length) {
+    //   setState(() {
+    //     _errorMessage =
+    //         'All models failed to load. Please check your device compatibility.';
+    //     _isLoading = false;
+    //   });
+    //   return;
+    // }
+    //
+    // final model = _models[_currentModelIndex];
+    //
+    // try {
+    //   setState(() {
+    //     _loadingStatus = 'Testing network connection...';
+    //     _errorMessage = null;
+    //   });
+    //
+    //   // Test network connectivity first
+    //   await _testNetworkConnectivity();
+    //
+    //   setState(() {
+    //     _loadingStatus = 'Loading ${model['name']}...';
+    //   });
+    //
+    //   print('Attempting to load model: ${model['name']}');
+    //   print('Model URL: ${model['url']}');
+    //   print('Platform: ${Platform.operatingSystem}');
+    //   print('Architecture: ${Platform.version}');
+    //   _lm = await CactusLM.init(
+    //     modelUrl: model['url'],
+    //     contextSize: model['context'],
+    //
+    //     onProgress: (progress, status, isError) {
+    //       setState(() {
+    //         _loadingStatus =
+    //             '${model['name']}: $status (${((progress ?? 0) * 100).toStringAsFixed(1)}%)';
+    //       });
+    //       print('Progress: $status (${(progress ?? 0) * 100}%)');
+    //
+    //       if (isError) {
+    //         print('Error during loading: $status');
+    //       }
+    //     },
+    //   );
+    //
+    //   setState(() {
+    //     _isLoading = false;
+    //     _loadingStatus = '${model['name']} loaded successfully!';
+    //   });
+    //
+    //   print('Model loaded successfully: ${model['name']}');
+    // } catch (e) {
+    //   print('Model loading error for ${model['name']}: $e');
+    //   print('Error type: ${e.runtimeType}');
+    //
+    //   // Check if it's a network error
+    //   if (e.toString().contains('SocketException') ||
+    //       e.toString().contains('Failed host lookup')) {
+    //     setState(() {
+    //       _errorMessage =
+    //           'Network Error: Cannot connect to Hugging Face.\n\nPlease check:\n• Internet connection\n• VPN settings\n• Firewall restrictions\n\nError: $e';
+    //       _isLoading = false;
+    //     });
+    //     return;
+    //   }
+    //
+    //   // Try next model
+    //   _currentModelIndex++;
+    //   if (_currentModelIndex < _models.length) {
+    //     print('Trying next model...');
+    //     await _loadModel();
+    //   } else {
+    //     setState(() {
+    //       _errorMessage = 'All models failed to load. Last error: $e';
+    //       _isLoading = false;
+    //     });
+    //   }
+    // }
+  }
+
+  Future<void> initModel() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final modelFile = File('${dir.path}/tinyllama.gguf');
+
+    // Copy model from assets to local storage (once)
+    if (!await modelFile.exists()) {
+      final byteData = await rootBundle.load(
+        'assets/model/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
+      );
+      await modelFile.writeAsBytes(byteData.buffer.asUint8List());
+    }
+
+    // Initialize the model from local path
+    _lm = await CactusLM.init(modelUrl: modelFile.path, contextSize: 512);
   }
 
   Future<void> _sendPrompt() async {
